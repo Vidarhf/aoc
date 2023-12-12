@@ -74,9 +74,69 @@ def process_input(input_file):
     furthestPos = len(path)//2 
     return furthestPos
 
-#Extrapolate backwards
 def process_input2(input_file):
-    return 0
+    lines = [[x for x in l] for l in pathlib.Path(input_file).read_text().strip().split('\n')]
+    size = len(lines)
+    matrix = dict()
+    startPos = ()
+    for r in range(size):
+        line = lines[r]
+        for c in range(size):
+            char = line[c]
+            matrix[(r,c)] = char
+            if char == 'S':
+                startPos = (r,c)
+    #0r,1down,2l,3up
+    viableDirection = {0: ['7', '-', 'J'], 1: ['J', 'L', '|'], 2:['L', '-', 'F'], 3:['F', '7', '|']} 
+
+    def move(p,d, matrix):
+        R,C = p
+        dc,dr = [1,0,-1,0],[0,1,0,-1]
+        if matrix[p] == 'S' and d == 0: 
+            for i in range(4):
+                if (R+dr[i],C+dc[i]) in matrix:
+                    if matrix[(R+dr[i],C+dc[i])] in viableDirection[i]:
+                        return (R+dr[i],C+dc[i]),i
+        elif matrix[p] == 'F' and d == 3: d = 0
+        elif matrix[p] == 'F' and d == 2: d = 1
+
+        elif matrix[p] == '7' and d == 0: d = 1
+        elif matrix[p] == '7' and d == 3: d = 2
+
+        elif matrix[p] == 'J' and d == 1: d = 2
+        elif matrix[p] == 'J' and d == 0: d = 3
+
+        elif matrix[p] == 'L' and d == 2: d = 3
+        elif matrix[p] == 'L' and d == 1: d = 0
+        return (R+dr[d],C+dc[d]),d
+
+    #Start at startPos
+    #Walk the pipe from different directions, when they meet we've found our furtherst point and number of steps
+    #Keep track of the path
+    path = set()
+    backAtStart = True
+    walker = startPos
+    #starting direction
+    direction =  0
+    while backAtStart:
+        walker, direction = move(walker, direction, matrix)
+        if matrix[walker] == 'S':
+            backAtStart = False
+        if walker not in path:
+            path.add(walker)
+    enclosed = set()
+    lastChar = ''
+    for R in range(size):
+        out = True
+        for C in range(size):
+            if (R,C) in path:
+                if matrix[R,C]!= '-' and lastChar+matrix[(R,C)] not in ['L7','FJ']:
+                    out = not out
+                    lastChar = matrix[(R,C)]
+            else:
+                if not out:
+                    enclosed.add((R,C))
+    return len(enclosed)
 
 def getSolutionPart1(input_file):
     numberOfSteps = process_input(input_file)
